@@ -34,7 +34,7 @@ Options:
 import docopt
 import os
 import sys
-from pgMapMatch import mapMatcher
+from mapmatcher import mapMatcher
 
 
 def write_output(id, mm, fn):

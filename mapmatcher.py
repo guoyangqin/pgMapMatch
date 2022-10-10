@@ -17,13 +17,13 @@ import numpy as np
 from scipy import stats, sparse
 
 # pgMapMatch tools
-from . import tools as mmt
+import tools as mmt
 
 try:
-    from .config import *
+    from config import *
 except ModuleNotFoundError:
     raise Warning('config.py not found. Using config_template.py instead')
-    from .config_template import *
+    from config_template import *
 
 
 class traceCleaner():
@@ -182,8 +182,8 @@ class mapMatcher():
         self.clearCurrentRoutes()
 
         self.streets_srid = str(self.db.execfetch('SELECT ST_SRID(%s) FROM %s LIMIT 1;' % (streetGeomCol, streetsTable))[0][0])
-        if self.streets_srid == '4326':
-            raise Exception('Streets SRID is 4326. You should use a projected coordinate system. Project your streets geometry column and try again.')
+        # if self.streets_srid == '4326':
+        #     raise Exception('Streets SRID is 4326. You should use a projected coordinate system. Project your streets geometry column and try again.')
         if traceTable is not None:
             self.trace_srid = str(self.db.execfetch('SELECT ST_Srid(%s) FROM %s LIMIT 1' % (self.geomName, self.traceTable))[0][0])
             if self.trace_srid != self.streets_srid:
@@ -397,8 +397,8 @@ class mapMatcher():
         cmd = '''SELECT (dp).path[1]-1 AS path, %(streetIdCol)s, ST_Distance((dp).geom, %(streetGeomCol)s),
                         ST_LineLocatePoint(%(streetGeomCol)s, (dp).geom), ST_M((dp).geom)
                  FROM %(streetsTable)s, (%(dpStr)s) AS pts
-                WHERE ST_DWithin((dp).geom, %(streetGeomCol)s, %(gpsError)s)
-                    OR (%(fwayQuery)s ST_DWithin((dp).geom, %(streetGeomCol)s, %(gpsError_fway)s))
+                WHERE ST_DWithin((dp).geom::geography, %(streetGeomCol)s::geography, %(gpsError)s)
+                    OR (%(fwayQuery)s ST_DWithin((dp).geom::geography, %(streetGeomCol)s::geography, %(gpsError_fway)s))
                 ORDER BY path, st_distance''' % dict(self.cmdDict, **{'dpStr': dpStr, 'fwayQuery': fwayQueryTxt})
         pts = self.db.execfetch(cmd)
         if pts is None or pts == []:
@@ -453,7 +453,7 @@ class mapMatcher():
             cmd = '''UPDATE %(traceTable)s SET ''' % cDict
             if writeEdgeIds:    cmd += '''%(edgeIdCol)s = ARRAY%(edges)s,''' % cDict
             if writeMatchScore:
-                if np.isnan(match_score): 
+                if np.isnan(match_score):
                     cmd += 'match_score=Null,'
                 else:
                     cmd += 'match_score=%s,' % np.float32(match_score)   # float32 needed to avoid underflow with very low scores
@@ -598,7 +598,7 @@ class mapMatcher():
         xb = self.qualityModelCoeffs['intercept']
         if 'frechet_dist' in self.qualityModelCoeffs :
             if self.projectionRatio is None:        # get ratio of projected units to meters (to be able to use Frechet distance)
-                cmd = '''SELECT AVG(ST_Length(%(streetGeomCol)s) / st_length(ST_Transform(%(streetGeomCol)s, 4326)::geography)) 
+                cmd = '''SELECT AVG(ST_Length(%(streetGeomCol)s) / st_length(ST_Transform(%(streetGeomCol)s, 4326)::geography))
                             FROM %(streetsTable)s WHERE ST_Length(%(streetGeomCol)s)>0 LIMIT 1000;''' % self.cmdDict
                 self.projectionRatio = self.db.execfetch(cmd)[0][0]
                 if self.verbose: print('Using projection ratio (map units to meters) of {:.3f}'.format(self.projectionRatio ))
@@ -773,7 +773,7 @@ class mapMatcher():
             frcsAlong = self.ptsDf[self.ptsDf.edge==route[-1][0]].loc[nid:,'frcalong']
             threshold = 0.1 # how many km the furthest GPS ping has to be along, in order to add a uturn
             if ((route[-1][1] == 0 and frcsAlong.max()*self.edgesDf.loc[route[-1][0],'km'] > threshold) or
-                (route[-1][1] == 1 and (1-frcsAlong.min())*self.edgesDf.loc[route[-1][0],'km'] > threshold)):  
+                (route[-1][1] == 1 and (1-frcsAlong.min())*self.edgesDf.loc[route[-1][0],'km'] > threshold)):
                 fullroute.append(fullroute[-1])
                 uturnFrcs[-1] = (frcsAlong.min(), frcsAlong.max())
                 uturnFrcs.append(-1)
@@ -789,7 +789,7 @@ class mapMatcher():
         lastEdgeLength = self.edgesDf.loc[self.bestRoute[-1], 'km']
         frc = self.ptsDf.frcalong[self.ptsDf.rownum == int(d[-1]/2)].values[0]
         if d[-1] % 2 == 1: frc = 1-frc  # reverse
-        while (len(self.bestRoute) > 1 and 
+        while (len(self.bestRoute) > 1 and
               (lastEdgeLength*frc < 0.005 or (self.allowFinalUturn is False and self.bestRoute[-1] == self.bestRoute[-2]))):
             self.bestRoute = self.bestRoute[:-1]
             self.uturnFrcs = self.uturnFrcs[:-1]
@@ -1051,7 +1051,7 @@ class mapMatcher():
         else: # use new PostGIS function
             if self.traceId:
                 frechetGeomName = self.cleanedGeomName if self.cleanedGeomName else self.geomName
-                frechet_dist = self.db.execfetch('''SELECT ST_FrechetDistance(%(newGeomName)s, %(frechetGeomName)s, 0.05) 
+                frechet_dist = self.db.execfetch('''SELECT ST_FrechetDistance(%(newGeomName)s, %(frechetGeomName)s, 0.05)
                                                         FROM %(traceTable)s WHERE %(idName)s=%(traceId)s;''' % dict(self.cmdDict, **{'traceId': self.traceId, 'frechetGeomName': frechetGeomName}))[0][0]
             else:
                 if self.matchedLineString is None: self.getMatchedLineString()
@@ -1249,7 +1249,7 @@ class qualityPredictor():
         engine = mmt.getPgEngine(pgLogin=pgInfo)
 
         df.pr_good.to_sql('tmpimport', engine, if_exists='replace')
-        self.db.fix_permissions_of_new_table('tmpimport') 
+        self.db.fix_permissions_of_new_table('tmpimport')
         print('Merging and cleaning up')
         self.db.execute('ALTER TABLE %s DROP COLUMN IF EXISTS pr_good;' % table)
         self.db.execute('ALTER TABLE %s ADD COLUMN pr_good real;' % table)
