@@ -22,14 +22,14 @@ pgInfo = {'db': 'shanghai_taxi_data',
 
 # how many nodes pgrouting can route at once.
 # If you have lots of memory, increase. If you get a memory error, reduce
-maxNodes = 250
+maxNodes = 500
 
 # All these parameters assume meters, but must match the units of your projection
 # State Plane meters will normally work best
-weight_1stlast = 6      # for the first and last node, how much distance weight is increased by. This helps to ensure the match is closer to and from the start and endpoint
-gpsError = 50           # max distance that streets can be from GPS point to be considered
-gpsError_fway = 70      # same, but for freeway (kmh>100) - because these roads are much wider
-maxSpeed = 120           # speed threshold for deleting pings (kmh) in traceCleaner
+weight_1stlast = 0.5    # for the first and last node, how much distance weight is increased by. This helps to ensure the match is closer to and from the start and endpoint
+gpsError = 0.0005           # degree, max distance that streets can be from GPS point to be considered
+gpsError_fway = 0.0007      # degree, same, but for freeway (kmh>100) - because these roads are much wider
+maxSpeed = 120          # speed threshold for deleting pings (kmh) in traceCleaner
 
 sigma_z = 10.0          # std dev parameter for geometric likelihood. Relates to GPS noise. Newson and Kummel 2009 say 4.0
 sigma_t = 0.3           # std dev parameter for temporal likelihood
@@ -40,7 +40,7 @@ topol_weight = 1.7      # how more more the topological likelihood is weighted r
 skip_penalty = 3        # penalty for skipping a point is temporalLL(skip_penalty)
 max_skip = 4            # maximum number of points to skip. Reducing this will improve performance
 uturnCost = None        # if None, use the default (the average of the median cost and reverse cost in the edges)
-allowFinalUturn = True  # if True, allow a U-turn on the final edge
+allowFinalUturn = False # if True, allow a U-turn on the final edge
 
 # column identifiers for the PostGIS table of streets
 # the default values here are compatible with osm2po
@@ -54,6 +54,6 @@ streetLengthCol = 'km'      # length of street, in km
 speedLimitCol = 'kmh'       # speed limit on street, in km per hour
 
 # SQL-compliant query that identifies freeways (with the higher gps error tolerance)
-fwayQuery = 'clazz<15 OR kmh>=100'
+fwayQuery = 'clazz<=2 OR kmh>=80' # 'clazz<15 OR kmh>=100' for `shanghai_2po_4pgr`, 'kmh>=100' for `shanghai_road_wgs84_routable`
 # comma-separated list of columns that are needed in fwayQuery, but are not listed above
-fwayCols = 'clazz'
+fwayCols = 'clazz' # 'clazz'

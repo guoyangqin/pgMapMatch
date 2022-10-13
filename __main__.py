@@ -35,6 +35,7 @@ import docopt
 import os
 import sys
 from mapmatcher import mapMatcher
+import time
 
 
 def write_output(id, mm, fn):
@@ -96,7 +97,10 @@ if args['pg']:
         ids = mm.db.execfetch('SELECT %s FROM %s;' % (args['<idname>'], args['<pgtable>']))
         ids = sorted([ii[0] for ii in ids])
 
-    for id in ids:
+    start_time = time.time()
+
+    for i, id in enumerate(ids):
+        print(f'======================= [{int(time.time()-start_time)}s] Matching {i+1}/{len(ids)}: {id} =======================')
         mm.matchPostgresTrace(id)
         reportMatch(id, mm)
         if mm.matchStatus == 0 and (args['--write_edges'] or args['--write_geom'] or args['--write_score']):

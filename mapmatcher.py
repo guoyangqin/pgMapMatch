@@ -313,6 +313,7 @@ class mapMatcher():
         # full_starttime = time.time() # for testing
 
         self.getPtsDf()
+        print('Points loaded.')
 
         if len(self.nids) < 3:
             self.matchStatus = 1
@@ -321,11 +322,14 @@ class mapMatcher():
 
         self.updateCostMatrix()
 
+        print('Cost matrix updated.')
+
         starttime = time.time()
         self.N = len(self.ptsDf)*2
         rowKeys, colKeys, scores = [], [], []   # scores are held here, before conversion to a sparse matrix
 
         for nid1, rr1 in self.ptsDf.loc[:self.nids[-2]].iterrows():
+            print(f'\r{nid1}: {len(self.ptsDf.loc[:self.nids[-2]])}...', end='')
             rr1 = rr1.to_dict()
             for dir1 in [0, -1]:
                 idx1 = int(rr1['rownum']*2-dir1)
@@ -348,6 +352,8 @@ class mapMatcher():
                             scores.append(self.transProb(rr1, rr2, dir1, dir2, seglength))
                         else:
                             scores.append((1e10, 1e10, -1))
+
+        print('\nLoop done.')
 
         # coo matrix from lists is fastest way to build a sparse matrix,
         # rather than assigning to lil or dok matrix directly
@@ -397,8 +403,8 @@ class mapMatcher():
         cmd = '''SELECT (dp).path[1]-1 AS path, %(streetIdCol)s, ST_Distance((dp).geom, %(streetGeomCol)s),
                         ST_LineLocatePoint(%(streetGeomCol)s, (dp).geom), ST_M((dp).geom)
                  FROM %(streetsTable)s, (%(dpStr)s) AS pts
-                WHERE ST_DWithin((dp).geom::geography, %(streetGeomCol)s::geography, %(gpsError)s)
-                    OR (%(fwayQuery)s ST_DWithin((dp).geom::geography, %(streetGeomCol)s::geography, %(gpsError_fway)s))
+                WHERE ST_DWithin((dp).geom, %(streetGeomCol)s, %(gpsError)s)
+                    OR (%(fwayQuery)s ST_DWithin((dp).geom, %(streetGeomCol)s, %(gpsError_fway)s))
                 ORDER BY path, st_distance''' % dict(self.cmdDict, **{'dpStr': dpStr, 'fwayQuery': fwayQueryTxt})
         pts = self.db.execfetch(cmd)
         if pts is None or pts == []:
