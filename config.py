@@ -27,13 +27,8 @@ maxNodes = 2500
 # All these parameters assume meters, but must match the units of your projection
 # State Plane meters will normally work best
 weight_1stlast = 10    # for the first and last node, how much distance weight is increased by. This helps to ensure the match is closer to and from the start and endpoint
-<<<<<<< HEAD
 gpsError = 0.0005           # degree, max distance that streets can be from GPS point to be considered
 gpsError_fway = 0.0007      # degree, same, but for freeway (kmh>100) - because these roads are much wider
-=======
-gpsError = 0.0003           # degree, max distance that streets can be from GPS point to be considered
-gpsError_fway = 0.0003      # degree, same, but for freeway (kmh>100) - because these roads are much wider
->>>>>>> master
 maxSpeed = 120          # speed threshold for deleting pings (kmh) in traceCleaner
 
 sigma_z = 10.0          # std dev parameter for geometric likelihood. Relates to GPS noise. Newson and Kummel 2009 say 4.0
@@ -43,11 +38,7 @@ temporal_scale = 0.55   # scale parameter for temporal likelihood
 temporal_weight = 1.7   # how more more the temporal likelihood is weighted relative to the distance likelihood score
 topol_weight = 1.7      # how more more the topological likelihood is weighted relative to the distance likelihood score
 skip_penalty = 3        # penalty for skipping a point is temporalLL(skip_penalty)
-<<<<<<< HEAD
 max_skip = 6           # maximum number of points to skip. Reducing this will improve performance
-=======
-max_skip = 10           # maximum number of points to skip. Reducing this will improve performance
->>>>>>> master
 uturnCost = None        # if None, use the default (the average of the median cost and reverse cost in the edges)
 allowFinalUturn = False # if True, allow a U-turn on the final edge
 
